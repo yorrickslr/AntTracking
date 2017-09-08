@@ -45,3 +45,14 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.ipch
+AntTracking/x64/Debug/vc140.idb
+*.pdb
+AntTracking/x64/Debug/FlannBasedTracker.obj
+*.obj
+*.tlog
+*.sdf
+*.idb
+*.ilk
+*.log
+*.pch
