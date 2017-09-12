@@ -14,7 +14,7 @@ ContourExtractor::~ContourExtractor()
 
 void  ContourExtractor::extractContours(cv::Mat & inputImage)
 {
-	contours= std::vector<std::vector<cv::Point>>();
+	//contours= std::vector<std::vector<cv::Point>>(); // reset contour storage
 	cv::findContours(inputImage, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, cv::Point(0, 0));
 
 }

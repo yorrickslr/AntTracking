@@ -8,7 +8,6 @@ public:
 	~ContourExtractor();
 	std::vector<cv::Vec4i> hierarchy;
 	std::vector<std::vector<cv::Point> > contours;
-
 	void extractContours(cv::Mat& image);
 	void showContours(cv::Mat &drawingSurface);
 };

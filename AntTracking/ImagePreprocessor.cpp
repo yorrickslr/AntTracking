@@ -29,11 +29,10 @@ void ImagePreprocessor::processImage(cv::Mat &input)
 
 	for (int i = 0; i < inWidth*inHeight;i++) {
 		// this will make the background converge againt a quantile of the input values
-		int32_t absDiffSum=0;
+		int32_t diffSum=0;
 		for (int c = 0; c < 3; c++) {
 			int32_t scaledInput = (*inData) *bgScale;
-			int32_t channelDiff = scaledInput - *bgData;
-			absDiffSum += abs(channelDiff);
+			diffSum += (int32_t)*bgData - (int32_t)scaledInput;
 			if (*bgData < scaledInput) {
 				*bgData += stepUp;
 			}
@@ -43,8 +42,7 @@ void ImagePreprocessor::processImage(cv::Mat &input)
 			bgData++; // proceed to next Value 
 			inData++;
 		}
-
-		*diffOutData = absDiffSum/(3 * bgScale); 
+		if(diffSum>0)*diffOutData = diffSum /(3 * bgScale);
 		diffOutData++;// proceed to next Value
 	}
 	cv::threshold(diffOutput, threshedOutput, threshold,255,CV_THRESH_BINARY);

@@ -16,97 +16,77 @@
 
 #include "ImagePreprocessor.h"
 #include "ContourExtractor.h"
-
+#include "FlannBasedTracker.h"
 //#define liveVideo
 
 using namespace cv;
 using namespace std;
 
 // set gloabal tracking variables
-int brightnessThreshold = 25;
+int diffThreshold = 25;
+int minSizeThreshold = 5; //min size of tracked objects (pixels)
+int maxSizeThreshold = 25; //max size of tracked objects (pixels)
+
+
 int camExposure = -6;
 int usedBackground = 95;
 VideoCapture setupCamera(int &exposure); //prototype
-
+void createControlWindow(VideoCapture &cam);// prototype
 int main(int argc, char **argv)
 {
+	unsigned long frameIdx=0;
+	// set up all object needed
 	VideoCapture cam = setupCamera(camExposure);
 	int width = cam.get(CV_CAP_PROP_FRAME_WIDTH);
 	int height = cam.get(CV_CAP_PROP_FRAME_HEIGHT);
 
-	//createControlWindow(camExposure, usedBackground, brightnessThreshold,cam);
+	createControlWindow(cam);
 	ImagePreprocessor bgSubstractor;
-	
 	ContourExtractor  contourExtractor(width, height);
 	bgSubstractor.setMask(imread("c:\\anttrack\\mask.png", CV_LOAD_IMAGE_GRAYSCALE));
-
+	FlannBasedTracker tracker;
+	tracker.createGui();
 //	createControlWindow(cam);
 	cv::Mat inputImage;
 	cv::Mat debugOutImage;
 
-	//initialize bg
-
+	/////////initialize bg
 	//take a few frames from the beginning of the file until it has stabelized
-	for (int i = 0; i < 1000; i++) {
-		
-		cout << "dropping first frame" << i  <<"success:"<<cam.read(inputImage)<<"\n";
+	cout << "dropping first frames...\n";
+	for (int i = 0; i < 4000; i++) {
+		cam.grab();
+		frameIdx++;
 	}
+
 	cam >> inputImage;
 	debugOutImage = inputImage.clone(); //allocate  debugout once
 	bgSubstractor.setBackground(inputImage);
 
+
 	while (true) {
+		// update settings
+		bgSubstractor.threshold = diffThreshold;
+		// get image and process data
 		cam>>inputImage;
-		inputImage.copyTo(debugOutImage);
+		frameIdx++;
+		inputImage.copyTo(debugOutImage); // we use this as a drawing surface for debug out
 		bgSubstractor.processImage(inputImage);
 		contourExtractor.extractContours(bgSubstractor.threshedOutput);
-		/// Show in a window
-		cout << "got new frame\n";
+		tracker.updateWithContours(contourExtractor.contours);
+	
+		if(contourExtractor.contours.size())cout << "detected "<<contourExtractor.contours.size()<<"objects in frame"<< frameIdx<<"\n";
+		/// Show results in a window
 		contourExtractor.showContours( debugOutImage);
 		namedWindow("debugOut", CV_WINDOW_AUTOSIZE);
 		imshow("debugOut", debugOutImage);
+
+		// we need to do this to give opencv time to display the results
 		if (cv::waitKey(1) == 27)
 			break;
 	}
 	//startTracking(cam);
 }
 
-
-void contourDetection(Mat &inputImage) {
-	vector<vector<Point> > contours;
-	vector<Vec4i> hierarchy;
-
-	/// Find contours
-	findContours(inputImage, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0));
-
-	/// Get the moments
-	vector<Moments> mu(contours.size());
-	for (int i = 0; i < contours.size(); i++)
-	{
-		mu[i] = moments(contours[i], false);
-	}
-
-	///  Get the mass centers:
-	vector<Point2f> mc(contours.size());
-	for (int i = 0; i < contours.size(); i++)
-	{
-		mc[i] = Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
-	}
-
-	/// Draw contours
-	Mat drawing = Mat::zeros(inputImage.size(), CV_8UC3);
-	for (int i = 0; i < contours.size(); i++)
-	{
-		Scalar color = Scalar(0, 0, 255);
-		drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, Point());
-		circle(drawing, mc[i], 4, color, -1, 8, 0);
-	}
-	/// Show in a window
-	namedWindow("Contours", CV_WINDOW_AUTOSIZE);
-	imshow("Contours", drawing);
-
-
-}
 
 VideoCapture setupCamera(int &exposure) {
 
@@ -137,6 +117,8 @@ VideoCapture setupCamera(int &exposure) {
 //void createControlWindow(int &set1, int &set2, int &set3, VideoCapture &cam) {
 void createControlWindow(VideoCapture &cam) {
 	cvNamedWindow("control", 1);
+	cv::createTrackbar("threshold", "control", &diffThreshold, 50, 0);
+
 #ifdef liveVideo
 	//exposure slider
 	int a = cv::createTrackbar("exposure", "control", &camExposure, 5, onExposure, &cam);
@@ -144,7 +126,6 @@ void createControlWindow(VideoCapture &cam) {
 	//background adaption slider
 //	int b = cv::createTrackbar("background", "control", &usedBackground, 100, onBackground);
 	//brightness slider
-//	int c = cv::createTrackbar("brightness", "control", &brightnessThreshold, 50, onBrightness);
 }
 
 void measureFramerate(VideoCapture &cam) {
@@ -158,50 +139,6 @@ void measureFramerate(VideoCapture &cam) {
 	// std::cout << 64/difftime(end, start) << "fps" << std::endl;
 	// std::cout << "press any key to continue..." << std::endl;
 	// std::cin.get();
-}
-
-void startTracking(VideoCapture &cam) {
-	int width = cam.get(CV_CAP_PROP_FRAME_WIDTH);
-	int height = cam.get(CV_CAP_PROP_FRAME_HEIGHT);
-	std::cout << "Resolution: " << width << "x" << height << std::endl;
-
-	//measureFramerate(cam);
-
-	//create matrizes for further use
-	cv::Mat frameFromCamera(height, width, CV_8UC3), inputToBlob(height, width, CV_8UC3), result(height, width, CV_8UC3);
-	cv::Mat curr(height, width, CV_32F), diff(height, width, CV_32F), background(height, width, CV_32F);
-
-	cam >> frameFromCamera;
-	frameFromCamera.convertTo(background, CV_32F);
-	result = background;
-	cv::Mat grayDiff(height, width, CV_8UC3);
-	for (long f = 1;; f++) {
-		cam >> frameFromCamera;
-		frameFromCamera.convertTo(curr, CV_32F);
-		//blur(curr, curr, cv::Size(3, 3));
-
-		// adapt the background slowly to current changes
-		float fraction = exp(-usedBackground);
-		background *= (1.0 - fraction);
-		background += (fraction)* curr;
-
-		// create diff-image out of the background and the current image
-		cv::absdiff(background, curr, diff);
-		cvtColor(diff, grayDiff, CV_RGB2GRAY);
-		grayDiff.convertTo(inputToBlob, CV_8UC1);
-		cv::threshold(inputToBlob, inputToBlob, brightnessThreshold, 255, CV_THRESH_BINARY);
-
-		std::cerr << "start detection" << std::endl;
-		contourDetection(inputToBlob);
-		std::cerr << 1 << std::endl;
-
-		std::cerr << 2 << std::endl;
-		//imshow("1", result);
-		imshow("2", frameFromCamera);
-		//imshow("3", background);
-		if (cv::waitKey(10) == 27)
-			break;
-	}
 }
 
 
