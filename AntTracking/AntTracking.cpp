@@ -46,6 +46,7 @@ int main(int argc, char **argv)
 	bgSubstractor.setMask(imread("c:\\anttrack\\mask.png", CV_LOAD_IMAGE_GRAYSCALE));
 	FlannBasedTracker tracker;
 	tracker.createGui();
+
 //	createControlWindow(cam);
 	cv::Mat inputImage;
 	cv::Mat debugOutImage;
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
 		if(contourExtractor.contours.size())cout << "detected "<<contourExtractor.contours.size()<<"objects in frame"<< frameIdx<<"\n";
 		/// Show results in a window
 		contourExtractor.showContours( debugOutImage);
+		tracker.drawDebugOut(debugOutImage);
 		namedWindow("debugOut", CV_WINDOW_AUTOSIZE);
 		imshow("debugOut", debugOutImage);
 
