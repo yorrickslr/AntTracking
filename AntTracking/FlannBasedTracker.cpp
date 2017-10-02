@@ -38,14 +38,15 @@ void FlannBasedTracker::updateWithContours(std::vector<std::vector<cv::Point> > 
 		for (int i = 0; i < trackedObjects.size(); i++) {
 			oldPointFeatures.at<float>(i, 0) = trackedObjects[i].lastPosition.x;
 			oldPointFeatures.at<float>(i, 1) = trackedObjects[i].lastPosition.y;
-			oldPointFeatures.at<float>(i, 2) = trackedObjects[i].seenInCycleCount>cyclesTillObjectIsEstablished ? bonusForEstablishedObjects : 0;
+			// a little hack: established 
+			oldPointFeatures.at<float>(i, 2) = trackedObjects[i].seenInCycleCount > cyclesTillObjectIsEstablished ? bonusForEstablishedObjects : 0;
 		}
 
-		cv::Mat newPointFeatures(newContourCenters.size(), 2, CV_32F);
+		cv::Mat newPointFeatures(newContourCenters.size(), 3, CV_32F);
 		for (int i = 0; i < newContourCenters.size(); i++) {
 			newPointFeatures.at<float>(i, 0) = newContourCenters[i].x;
 			newPointFeatures.at<float>(i, 1) = newContourCenters[i].y;
-			oldPointFeatures.at<float>(i, 3) = bonusForEstablishedObjects;
+			newPointFeatures.at<float>(i, 2) =  bonusForEstablishedObjects;
 		}
 		// Use FLANN to match the two sets of points
 		cv::FlannBasedMatcher matcher;
@@ -106,7 +107,7 @@ void FlannBasedTracker::createGui()
 {
 	cv::createTrackbar("minSize", "control", &minSizeInput, 50, 0);
 	cv::createTrackbar("maxSize", "control", &maxSizeInput, 500, 0);
-	cv::createTrackbar("maxJump", "control", &maxJumpInput, 100, 0);
+	cv::createTrackbar("maxJump", "control", &maxJumpInput, 500, 0);
 
 	cv::createTrackbar("cycles till old", "control", &cyclesTillObjectIsEstablished, 50);
 	cv::createTrackbar("bonus for old", "control", &bonusForEstablishedObjects, 100);

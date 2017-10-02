@@ -16,11 +16,11 @@ public:
 	};
 	int minSizeInput = 20; // multiplied by ten for trackbar compatibility
 	int maxSizeInput = 200;// multiplied by ten for trackbar compatibility
-	int maxJumpInput = 30;// multiplied by ten for trackbar compatibility
+	int maxJumpInput = 300;// multiplied by ten for trackbar compatibility
 	int noSeeCyclesTillDiscard = 50;
 	
-	int cyclesTillObjectIsEstablished = 5; // if an object is this old, it will be treated preferentially in matching
-	int bonusForEstablishedObjects = 100;  // bonus in matching, should be in the range of pixel coordinates
+	int cyclesTillObjectIsEstablished = 3; // if an object is this old, it will be treated preferentially in matching
+	int bonusForEstablishedObjects = 5;  // bonus in matching, should be in the range of pixel coordinates
 
 	unsigned long curCycle = 0;
 	unsigned long nextObjectId = 0; // for assigning unique ids to objects

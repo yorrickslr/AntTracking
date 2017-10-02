@@ -19,8 +19,8 @@ public:
 	void createGui();
 
 
-	int stepUp = 10;	// if background Pixel is darker than  in current image, it will be increased by this
-	int stepDown = 1;   // if background Pixel is brighter than  in current image, it will be decreased by this
-	int threshold=30;    // if background Pixel and current image differ by more than this, an object is detected
+	int stepUp = 50;	// if background Pixel is darker than  in current image, it will be increased by this
+	int stepDown = 50;   // if background Pixel is brighter than  in current image, it will be decreased by this
+	int threshold=25;    // if background Pixel and current image differ by more than this, an object is detected
 };
 
