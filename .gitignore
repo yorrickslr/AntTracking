@@ -57,3 +57,4 @@ AntTracking/x64/Debug/FlannBasedTracker.obj
 *.log
 *.pch
 AntTracking.VC.opendb
+.vs/AntTracking/v14/.suo

@@ -4,6 +4,7 @@
 
 ImagePreprocessor::ImagePreprocessor()
 {
+	threshold = 30;
 }
 
 
@@ -71,4 +72,9 @@ void ImagePreprocessor::setBackground(cv::Mat & input)
 void ImagePreprocessor::setMask(cv::Mat & image)
 {
 	mask = image;
+}
+
+void ImagePreprocessor::createGui()
+{
+	cv::createTrackbar("threshold", "control", &threshold, 50);
 }

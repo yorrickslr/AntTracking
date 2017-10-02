@@ -15,9 +15,12 @@ public:
 	cv::Mat diffOutput;		// 8bit Mono.
 	cv::Mat threshedOutput;		// 8bit Mono.
 
-	const int bgScale = 1024;
-	int stepUp = 10;
-	int stepDown = 1;
-	int threshold=3;
+	const int bgScale = 1024; // Background is scaled by this value, so we can make small adjustments to it all the time
+	void createGui();
+
+
+	int stepUp = 10;	// if background Pixel is darker than  in current image, it will be increased by this
+	int stepDown = 1;   // if background Pixel is brighter than  in current image, it will be decreased by this
+	int threshold=30;    // if background Pixel and current image differ by more than this, an object is detected
 };
 

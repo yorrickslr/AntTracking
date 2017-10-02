@@ -19,13 +19,20 @@ void  ContourExtractor::extractContours(cv::Mat & inputImage)
 
 }
 
-void ContourExtractor::showContours( cv::Mat &drawingSurface)
+void ContourExtractor::showContours(cv::Mat &drawingSurface)
 {
-	/// Draw contours
-	for (int i = 0; i < contours.size(); i++)
-	{
-		cv::Scalar color(0, 0, 255);
-		drawContours(drawingSurface, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+	if (debugOutLevel > 0) {
+		/// Draw contours
+		for (int i = 0; i < contours.size(); i++)
+		{
+			cv::Scalar color(0, 0, 255);
+			drawContours(drawingSurface, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+		}
 	}
 
+}
+
+void ContourExtractor::createGui()
+{
+	cv::createTrackbar("DBGContour", "control", &debugOutLevel, 3);
 }

@@ -22,14 +22,10 @@
 using namespace cv;
 using namespace std;
 
-// set gloabal tracking variables
-int diffThreshold = 25;
-int minSizeThreshold = 5; //min size of tracked objects (pixels)
-int maxSizeThreshold = 25; //max size of tracked objects (pixels)
-
-
+// global settings
 int camExposure = -6;
-int usedBackground = 95;
+
+
 VideoCapture setupCamera(int &exposure); //prototype
 void createControlWindow(VideoCapture &cam);// prototype
 int main(int argc, char **argv)
@@ -43,8 +39,11 @@ int main(int argc, char **argv)
 	createControlWindow(cam);
 	ImagePreprocessor bgSubstractor;
 	ContourExtractor  contourExtractor(width, height);
-	bgSubstractor.setMask(imread("c:\\anttrack\\mask.png", CV_LOAD_IMAGE_GRAYSCALE));
+	bgSubstractor.setMask(imread("e:\\coding\\anttrack\\mask.png", CV_LOAD_IMAGE_GRAYSCALE));
 	FlannBasedTracker tracker;
+
+	contourExtractor.createGui();
+	bgSubstractor.createGui();
 	tracker.createGui();
 
 //	createControlWindow(cam);
@@ -65,8 +64,6 @@ int main(int argc, char **argv)
 
 
 	while (true) {
-		// update settings
-		bgSubstractor.threshold = diffThreshold;
 		// get image and process data
 		cam>>inputImage;
 		frameIdx++;
@@ -111,15 +108,14 @@ VideoCapture setupCamera(int &exposure) {
 		return 0;
 	}
 #else
-	cv::VideoCapture cam("c:\\anttrack\\antfeedMJPG2.avi");
+	cv::VideoCapture cam("e:\\coding\\anttrack\\antfeedMJPG2.avi");
 #endif
 	return cam;
 }
 
 //void createControlWindow(int &set1, int &set2, int &set3, VideoCapture &cam) {
 void createControlWindow(VideoCapture &cam) {
-	cvNamedWindow("control", 1);
-	cv::createTrackbar("threshold", "control", &diffThreshold, 50, 0);
+	cvNamedWindow("control", WINDOW_NORMAL);
 
 #ifdef liveVideo
 	//exposure slider

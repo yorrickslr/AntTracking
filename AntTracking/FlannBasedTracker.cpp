@@ -10,6 +10,7 @@ void FlannBasedTracker::updateWithContours(std::vector<std::vector<cv::Point> > 
 
 
 	std::vector<cv::Point2f> newContourCenters;
+	//////////Step 1: filter Blobs by size and extract center
 
 	//extract center of Mass
 	/// Get the moments of the contours
@@ -18,27 +19,33 @@ void FlannBasedTracker::updateWithContours(std::vector<std::vector<cv::Point> > 
 	for (int i = 0; i < contours.size(); i++)
 	{
 		// we do this using the "moments" of the contours
-		cv::Moments mu = moments(contours[i], false);
+		cv::Moments mu = moments(contours[i], true);
 		double size = mu.m00;
 		if (size >= minSize&&size <= maxSize) {
 			newContourCenters.push_back(cv::Point2f(mu.m10 / mu.m00, mu.m01 / mu.m00));
 		}
 	}
+
+	////////Step 2: try to find existing objects close to the detected blobs 
+	
 	std::vector<int> contourHasMatched; // flag: did the contour match to a known object?
 	contourHasMatched.resize(newContourCenters.size());
 
 	if (trackedObjects.size() > 0 && newContourCenters.size() > 0) {
+		/////we use FLANN for the matching, so we have to convert the positions into "feature matrices" first
 		// prepare matrices for old+new Positions. We will use them as "features" for the point matching
-		cv::Mat oldPointFeatures(trackedObjects.size(), 2, CV_32F);
+		cv::Mat oldPointFeatures(trackedObjects.size(), 3, CV_32F);
 		for (int i = 0; i < trackedObjects.size(); i++) {
 			oldPointFeatures.at<float>(i, 0) = trackedObjects[i].lastPosition.x;
 			oldPointFeatures.at<float>(i, 1) = trackedObjects[i].lastPosition.y;
+			oldPointFeatures.at<float>(i, 2) = trackedObjects[i].seenInCycleCount>cyclesTillObjectIsEstablished ? bonusForEstablishedObjects : 0;
 		}
 
 		cv::Mat newPointFeatures(newContourCenters.size(), 2, CV_32F);
 		for (int i = 0; i < newContourCenters.size(); i++) {
 			newPointFeatures.at<float>(i, 0) = newContourCenters[i].x;
 			newPointFeatures.at<float>(i, 1) = newContourCenters[i].y;
+			oldPointFeatures.at<float>(i, 3) = bonusForEstablishedObjects;
 		}
 		// Use FLANN to match the two sets of points
 		cv::FlannBasedMatcher matcher;
@@ -50,6 +57,7 @@ void FlannBasedTracker::updateWithContours(std::vector<std::vector<cv::Point> > 
 			cv::DMatch &curMatch = matches[matchIdx];
 			if (curMatch.distance < maxJump) {
 				trackedObjects[curMatch.trainIdx].lastSeenInCycle = curCycle;
+				trackedObjects[curMatch.trainIdx].seenInCycleCount++;
 				contourHasMatched[curMatch.queryIdx] = 1;
 				trackedObjects[curMatch.trainIdx].lastMove = (newContourCenters[curMatch.queryIdx] - trackedObjects[curMatch.trainIdx].lastPosition);
 				trackedObjects[curMatch.trainIdx].lastPosition = newContourCenters[curMatch.queryIdx];
@@ -68,7 +76,7 @@ void FlannBasedTracker::updateWithContours(std::vector<std::vector<cv::Point> > 
 		}
 	}
 	// remove Objects that have not been seen for a while
-	//this would be the fancy way
+	// this would be the fancy way
 //	trackedObjects.erase(std::remove_if(trackedObjects.begin(), trackedObjects.end(), [](TrackedObject o) {(curCycle - o.lastSeenInCycle) > noSeeCyclesTillDiscard}))
 	int nObjectsLeft = trackedObjects.size();
 	for (int i = 0; i < nObjectsLeft;) {
@@ -88,7 +96,7 @@ void FlannBasedTracker::drawDebugOut(cv::Mat & image)
 {
 	for (int i = 0; i < trackedObjects.size(); i++) {
 		std::string label =std::to_string(trackedObjects[i].id);
-
+		
 		cv::putText(image, label, trackedObjects[i].lastPosition, CV_FONT_HERSHEY_SIMPLEX, 1, cvScalar(0, 1, 0));
 	}
 }
@@ -99,4 +107,8 @@ void FlannBasedTracker::createGui()
 	cv::createTrackbar("minSize", "control", &minSizeInput, 50, 0);
 	cv::createTrackbar("maxSize", "control", &maxSizeInput, 500, 0);
 	cv::createTrackbar("maxJump", "control", &maxJumpInput, 100, 0);
+
+	cv::createTrackbar("cycles till old", "control", &cyclesTillObjectIsEstablished, 50);
+	cv::createTrackbar("bonus for old", "control", &bonusForEstablishedObjects, 100);
+	
 }
