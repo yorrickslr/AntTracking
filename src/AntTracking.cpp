@@ -16,6 +16,7 @@
 #include "ImagePreprocessor.h"
 #include "ContourExtractor.h"
 #include "FlannBasedTracker.h"
+#include "ZmqSender.h"
 //#define liveVideo
 
 using namespace cv;
@@ -36,10 +37,12 @@ int main(int argc, char **argv)
 	int height = cam.get(CV_CAP_PROP_FRAME_HEIGHT);
 
 	createControlWindow(cam);
+	// these  objects perform all our processing steps:
 	ImagePreprocessor bgSubstractor;
 	ContourExtractor  contourExtractor(width, height);
 	bgSubstractor.setMask(imread(FILE_MASK, CV_LOAD_IMAGE_GRAYSCALE));
 	FlannBasedTracker tracker;
+	ZmqSender sender;
 
 	contourExtractor.createGui();
 	bgSubstractor.createGui();
@@ -70,7 +73,8 @@ int main(int argc, char **argv)
 		bgSubstractor.processImage(inputImage);
 		contourExtractor.extractContours(bgSubstractor.threshedOutput);
 		tracker.updateWithContours(contourExtractor.contours);
-	
+		sender.sendTrackedObjectData(tracker.trackedObjects);
+
 		if(contourExtractor.contours.size())cout << "detected "<<contourExtractor.contours.size()<<"objects in frame"<< frameIdx<<"\n";
 		/// Show results in a window
 		contourExtractor.showContours( debugOutImage);
