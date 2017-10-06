@@ -2,7 +2,7 @@
 #include"zmq.hpp"
 #include "ant.hpp"
 #include "FlannBasedTracker.h"
-
+#include "CoordinateTranslator.h"
 class ZmqSender
 {
 public:
@@ -11,6 +11,6 @@ public:
 	zmq::socket_t publisher;
 	ZmqSender();
 	~ZmqSender();
-	void sendTrackedObjectData(std::vector<FlannBasedTracker::TrackedObject> &trackedObjects);
+	void sendTrackedObjectData(std::vector<FlannBasedTracker::TrackedObject> &trackedObjects, CoordinateTranslator &transformer);
 };
 

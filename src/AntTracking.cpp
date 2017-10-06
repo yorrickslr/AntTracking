@@ -16,6 +16,7 @@
 #include "ImagePreprocessor.h"
 #include "ContourExtractor.h"
 #include "FlannBasedTracker.h"
+#include "CoordinateTranslator.h"
 #include "ZmqSender.h"
 //#define liveVideo
 
@@ -28,6 +29,12 @@ int camExposure = -6;
 
 VideoCapture setupCamera(int &exposure); //prototype
 void createControlWindow(VideoCapture &cam);// prototype
+
+// used to set coordinates in Image
+void mouseEvent(int event, int x, int y, int flags, void* userdata) {
+	((CoordinateTranslator*)userdata)->mouseEvent(event, x, y, flags, 0);
+}
+
 int main(int argc, char **argv)
 {
 	unsigned long frameIdx=0;
@@ -42,11 +49,15 @@ int main(int argc, char **argv)
 	ContourExtractor  contourExtractor(width, height);
 	bgSubstractor.setMask(imread(FILE_MASK, CV_LOAD_IMAGE_GRAYSCALE));
 	FlannBasedTracker tracker;
+	CoordinateTranslator transformer;
 	ZmqSender sender;
 
 	contourExtractor.createGui();
 	bgSubstractor.createGui();
 	tracker.createGui();
+
+	namedWindow("debugOut", CV_WINDOW_AUTOSIZE);
+	setMouseCallback("debugOut", mouseEvent, &transformer);
 
 //	createControlWindow(cam);
 	cv::Mat inputImage;
@@ -73,13 +84,13 @@ int main(int argc, char **argv)
 		bgSubstractor.processImage(inputImage);
 		contourExtractor.extractContours(bgSubstractor.threshedOutput);
 		tracker.updateWithContours(contourExtractor.contours);
-		sender.sendTrackedObjectData(tracker.trackedObjects);
+		sender.sendTrackedObjectData(tracker.trackedObjects, transformer);
 
-		if(contourExtractor.contours.size())cout << "detected "<<contourExtractor.contours.size()<<"objects in frame"<< frameIdx<<"\n";
+		//if(contourExtractor.contours.size())cout << "detected "<<contourExtractor.contours.size()<<"objects in frame"<< frameIdx<<"\n";
 		/// Show results in a window
 		contourExtractor.showContours( debugOutImage);
 		tracker.drawDebugOut(debugOutImage);
-		namedWindow("debugOut", CV_WINDOW_AUTOSIZE);
+		transformer.drawGui(debugOutImage);
 		imshow("debugOut", debugOutImage);
 
 		// we need to do this to give opencv time to display the results

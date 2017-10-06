@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 		std::vector<Ant> ants;
 		zmq::message_t message;
 		subscriber.recv(&message);
-		std::cout << message.size() <<"--"<< sizeof(Ant)<< "\n";
+		//std::cout << message.size() <<"--"<< sizeof(Ant)<< "\n";
 		// check message size and tag
 		if (message.size() % sizeof(Ant) == 1) {
 			unsigned char* messageData = (unsigned char*)message.data();
@@ -31,7 +31,11 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		std::cout << ants.size() << std::endl;
+		std::cout <<"-------"<< ants.size() << std::endl;
+
+		for (int i = 0; i < ants.size(); i++) {
+			std::cout << ants[i].id<<"x: " << ants[i].x << "y: " << ants[i].y << std::endl;
+		}
 	}
 	return 0;
 }

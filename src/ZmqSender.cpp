@@ -1,5 +1,5 @@
 #include "ZmqSender.h"
-
+#include <opencv2/opencv.hpp>
 
 
 ZmqSender::ZmqSender():
@@ -15,13 +15,16 @@ ZmqSender::~ZmqSender()
 {
 }
 
-void ZmqSender::sendTrackedObjectData(std::vector<FlannBasedTracker::TrackedObject> &trackedObjects)
+void ZmqSender::sendTrackedObjectData(std::vector<FlannBasedTracker::TrackedObject> &trackedObjects, CoordinateTranslator &transformer)
 {
 	int nAnts = trackedObjects.size();
 	std::vector<Ant> toSend(nAnts);
 	for (int i = 0; i < nAnts; i++) {
-		toSend[i].x = trackedObjects[i].lastPosition.x;
-		toSend[i].y = trackedObjects[i].lastPosition.y;
+		//transform to level coordinates:
+		cv::Point2f transformedPoint = transformer.getLevelCoordinates(trackedObjects[i].lastPosition);
+
+		toSend[i].x = transformedPoint.x;
+		toSend[i].y = transformedPoint.y;
 		toSend[i].id = trackedObjects[i].id;
 	}
 	
@@ -30,6 +33,6 @@ void ZmqSender::sendTrackedObjectData(std::vector<FlannBasedTracker::TrackedObje
 	messageData[0]='a'; //identifier
 
 	if(nAnts>0)memcpy(&messageData[1], &toSend[0], nAnts*sizeof(Ant));
-	std::cout << message.size() << "--" << sizeof(Ant) << "\n";
+	//std::cout << message.size() << "--" << sizeof(Ant) << "\n";
 	publisher.send(message);
 }
